@@ -1,0 +1,92 @@
+
+###################################################################
+#	CVS	TAG                 filename                codename
+###################################################################
+eprints2-alpha-1				anchovy
+eprints2-alpha-2				pepperoni
+eprints2-pre-1					fishfinger
+eprints2-pre-2					ovenchip
+eprints2-pre-3					toast
+eprints2-pre-4					noodle
+eprints2-pre-5					bovex
+eprints2-pre-6		2.0.pre-6		baconbits
+eprints2-pre-7					limepickle
+eprints2-2-0		2.0			olive
+eprints-2-0-1pre1	2.0.1.pre-1		mangogoo
+eprints2-0-1		2.0.1			tuna
+eprints2-1-pre-1	2.1			onionring
+eprints2-1-pre-2	2.1.pre-2		misosoup
+eprints2-1-pre-3	2.1.pre-3		friedeel
+eprints2-1-pre-4	2.1.pre-4		sossy
+eprints2-1-pre-5	2.1.pre-5		chickendonner
+eprints2-1		2.1			pineapple
+eprints2-1-1-pre-1	2.1.1.pre-1		chillioil
+eprints2-1-1		2.1.1			sweetcorn
+eprints2-2-0-pre-1	2.2-pre-1		candycorn
+eprints2-2-0-pre-2	2.2-pre-2		bobbing-apple
+eprints-2-2		2.2			pumpkin
+eprints-2-2-1		2.2.1			pepper
+eprints2-3-0-tardis-1	2.3.0-tardis-1		devildoll
+eprints2-3-0-tardis-2	2.3.0-tardis-2		spacemutiny
+eprints2-3-0-pre-1	2.3.0-pre-1		princeofspace
+eprints2-3-0-pre-2	2.3.0-pre-2		agentforharm
+eprints2-2-99-0		2.2.99.0-alpha		extracrust
+eprints2-2-99-1		2.2.99.1-alpha		webfoot
+eprints2-2-99-2		2.2.99.2-alpha		makeroomforthetuna
+eprints2-2-99-3		2.2.99.3-alpha		whydoesithurt
+eprints2-2-99-4		2.2.99.4-beta		Hope Springs Eternal
+eprints2-2-99-5		2.2.99.5-beta		Make Mine a Ninety-Nine
+eprints2-2-99-6		2.2.99.6-beta		It will be over by Christmas...
+eprints2-3		2.3.0			Hoi Sin Duck
+eprints2-3-1		2.3.1			Words have power
+eprints2-3-1-99-1	2.3.1.99.1-beta		Never on a School Night
+eprints2-3-1-99-2	2.3.1.99.2-beta		I'm a Covert Ops
+eprints2-3-1-99-3	2.3.1.99.3-beta		Firing for Effect
+eprints2-3-2		2.3.2			Mercury Rising
+eprints2-3-2-99-1	2.3.2.99.1.alpha	Sailor Duck
+eprints2-3-3		2.3.3			Hod
+eprints2-3-4		2.3.4			Chesed
+eprints2-3-4-99-1	2.3.4.99.1.beta		Creamcheese
+eprints2-3-5		2.3.5			Yesod
+eprints2-3-6		2.3.6			Tiphareth
+eprints2-3-6-99-1	2.3.6.99.1-beta		Binah
+eprints2-3-6-99-2	2.3.6.99.2-beta		Redruff
+eprints2-3-6-99-3	2.3.6.99.3-beta		Gentle
+eprints2-3-6-99-4	2.3.6.99.4-beta		Ringtail
+eprints2-3-7		2.3.7			Caroline
+eprints2-3-7-99-1	2.3.7.99.1-beta		Chimbo
+eprints2-3-7-1		2.3.7.1			George
+eprints2-3-7-2		2.3.7.2			Outside
+eprints2-3-7-3		2.3.7.3			Fishsticks
+eprints2-3-7-99-2	2.3.7.99.2-beta		Stoker
+eprints2-3-7-99-3	2.3.7.99.3-beta		Shatner
+eprints2-3-7-99-4	2.3.7.99.4-beta		Khan
+eprints2-3-8		2.3.8			Biscuits
+eprints2-3-9		2.3.9			Bread Sticks
+eprints2-3-9-99-1	2.3.9-99-1		Griffin
+eprints2-3-10		2.3.10			Mustard
+eprints2-3-10-99-1	2.3.10.99.1-beta	Greek Salad
+eprints2-3-11		2.3.11			Wholegrain
+eprints2-3-11-99-1	2.3.11-99-1-beta	Egor
+eprints2-3-11-99-2	2.3.11-99-2-beta	Stag
+eprints2-3-11-99-3	2.3.11.99.3-beta	Beetle
+eprints2-3-11-99-4	2.3.11.99.4-beta	Teapot
+eprints2-3-11-99-5	2.3.11.99.5-beta	Bottle
+eprints2-3-11-99-6	2.3.11.99.6-beta	Cocktail
+eprints2-3-12		2.3.12			Southern Chicken
+eprints2-3-13-a-1	2.3.13.alpha.1		Pepper Chicken
+eprints2-3-13-b-1	2.3.13.beta.1		Kettle
+eprints2-3-13		2.3.13			Cup Cake
+eprints2-3-14-a-1	2.3.14.alpha.1		Plugin.1
+eprints2-3-14-a-2	2.3.14.alpha.2		Plugin.2
+eprints2-3-14-a-3	2.3.14.alpha.3		Plugin.3
+eprints2-3-14-a-4	2.3.14.alpha.4		Plugin.4
+eprints2-3-14-a-5	2.3.14.alpha.5		Plugin.5
+eprints3-0-b-0		3.0-beta-0		Glimpse
+eprints3-0-b-1		3.0-beta-1		Pumpkin
+eprints3-0-b-2		3.0-beta-2		Trout
+eprints3-0-b-3		3.0-beta-3		Triangle
+eprints3-0-rc-1		3.0-rc-1		All the Trimmings
+eprints3-0-rc-2		3.0-rc-2		Resolutions
+eprints3-0		3.0			Beetroot
+
