@@ -48,11 +48,13 @@ Force a package build, even if it doesn't exist in versions.txt.
 
 =item B<--license>
 
-Filename to read license from (defaults to licenses/gpl.txt)
+Filename to read license from (defaults to licenses/gpl.txt) 
+(NOTE this is currently not used!)
 
 =item B<--license-summary>
 
 Filename to read license summary from (defaults to licenses/gplin.txt) - gets embedded wherever _B<>_LICENSE__ pragma occurs.
+(NOTE this is currently not used!)
 
 =item B<--list>
 
@@ -122,7 +124,9 @@ if( $opt_list )
 }
 
 my $version_path;
-my $package_file;
+my $package_version;
+my $package_desc;
+my $rpm_version;
 my $package_ext = '.tar.gz';
 $package_ext = '.zip' if $opt_zip;
 $package_ext = '.tar.bz2' if $opt_bzip;
@@ -134,11 +138,34 @@ my( $type ) = @ARGV;
 my $date = `date +%Y-%m-%d`;
 chomp $date;
 
+
+
 if( $type eq "nightly" ) 
 { 
 	$version_path = "/trunk";
-	$package_file = "eprints-build-$date";
+	$package_version = "eprints-build-$date";
+	$package_desc = "EPrints Nightly Build - $package_version";
 	$opt_revision = 1;
+	$rpm_version = 0;
+}
+elsif( $opt_branch )
+{
+	$version_path = "/branches/".$type;
+	$package_version = "eprints-branch-$type-$date";
+	$package_desc = "EPrints Branch Build - $package_version";
+	$opt_revision = 1;
+	my $result = `svn info http://svn.eprints.org/svn/eprints$version_path/system/`;
+	push @raw_args, "--force";
+	if( !length( $result ) )
+	{
+		print "Could not find branch '$type'\n\n";
+		print "Available branches:\n";
+		print `svn ls  http://svn.eprints.org/svn/eprints/branches/`;
+		print "\n";
+		exit 1;
+	}	
+	$rpm_version = 0;
+		
 }
 else
 {
@@ -150,20 +177,13 @@ else
 	{
 		print "Unknown codename\n";
 		print "Available:\n".join("\n",sort keys %codenames)."\n\n";
-		exit;
+		exit 1;
 	}
-	if( $opt_branch )
-	{
-		$version_path = "/branches/".$type;
-		$package_file = "eprints-branch-$type";
-		$opt_revision = 1;
-	}
-	else
-	{
-		$version_path = "/tags/".$type;
-		$package_file = "eprints-".$ids{$type};
-	}
-	print "YAY - $ids{$type}\n";
+	$version_path = "/tags/".$type;
+	$package_version = "eprints-".$ids{$type};
+	$package_desc = "EPrints ".$ids{$type}." (".$codenames{$type}.") [Born on $date]";
+	$rpm_version = $package_version;
+        $rpm_version =~ s/-.*//; # Exclude beta/alpha/RC versioning
 }
 
 erase_dir( "export" );
@@ -173,7 +193,7 @@ my $originaldir = getcwd();
 
 mkdir( "export" );
 
-open( SVNINFO, "svn info http://trac.eprints.org/svn/eprints$version_path/system/|" ) || die "Could not run svn info";
+open( SVNINFO, "svn info http://svn.eprints.org/svn/eprints$version_path/system/|" ) || die "Could not run svn info";
 my $revision;
 while( <SVNINFO> )
 {
@@ -185,48 +205,64 @@ if( !defined $revision )
 {
 	die 'Could not see revision number in svn info output';
 }
-cmd( "svn export http://trac.eprints.org/svn/eprints$version_path/release/ export/release/")==0 or die "Could not export system.\n";
-cmd( "svn export http://trac.eprints.org/svn/eprints$version_path/system/ export/system/")==0 or die "Could not export system.\n";
+cmd( "svn export http://svn.eprints.org/svn/eprints$version_path/release/ export/release/")==0 or die "Could not export system.\n";
+cmd( "svn export http://svn.eprints.org/svn/eprints$version_path/system/ export/system/")==0 or die "Could not export system.\n";
 
 if( $opt_revision )
 {
-	$package_file .= "-r$revision";
+	$package_version .= "-r$revision";
 }
 
-push @raw_args, 'export'; # The source
-push @raw_args, 'package'; # The target
+my @args;
+push @args, 'export'; # The source
+push @args, 'package'; # The target
+push @args, $package_version;
+push @args, $package_desc;
+push @args, $package_version;
+push @args, $package_ext;
+push @args, $rpm_version;
+
+# I don't follow this code so it's commented out for now.
+#
 # Optional revision number (which is a pain because we *add* a value)
-if( $opt_revision )
-{
-	for(my $i = 0; $i < @raw_args; $i++)
-	{
-		if( $raw_args[$i] eq '--revision' )
-		{
-			splice(@raw_args, $i+1, 0, $revision);
-		}
-		elsif( $raw_args[$i] eq '-r' )
-		{
-			splice(@raw_args, $i, 1, '--revision', $revision);
-		}
-		elsif( $raw_args[$i] =~ s/^-([a-z]*)r([a-z]*)$/-$1$2/i )
-		{
-			splice(@raw_args,$i,1) unless length($1) or length($2);
-			unshift @raw_args, '--revision', $revision;
-		}
-		else
-		{
-			next;
-		}
-		last;
-	}
-}
+#if( $opt_revision )
+#{
+#	for(my $i = 0; $i < @raw_args; $i++)
+#	{
+#		if( $raw_args[$i] eq '--revision' )
+#		{
+#			splice(@raw_args, $i+1, 0, $revision);
+#		}
+#		elsif( $raw_args[$i] eq '-r' )
+#		{
+#			splice(@raw_args, $i, 1, '--revision', $revision);
+#		}
+#		elsif( $raw_args[$i] =~ s/^-([a-z]*)r([a-z]*)$/-$1$2/i )
+#		{
+#			splice(@raw_args,$i,1) unless length($1) or length($2);
+#			unshift @raw_args, '--revision', $revision;
+#		}
+#		else
+#		{
+#			next;
+#		}
+#		last;
+#	}
+#}
 
-cmd( "export/release/internal_makepackage.pl", @raw_args );
+cmd( "export/release/internal_makepackage.pl", @args );
 
 # stuff
 
 print "Removing temporary directories...\n";
 erase_dir( "export" );
+
+my $filename = $package_version.$package_ext;
+if( -e $filename )
+{
+	print "Moving package file into packages/ directory.\n";
+	`mv $filename packages/`;
+}
 
 my( $rpm_file, $srpm_file);
 
@@ -240,9 +276,10 @@ elsif( system('which rpmbuild') != 0 )
 }
 else
 {
-	open(my $fh, "rpmbuild -ta $package_file$package_ext|")
+	open(my $fh, "rpmbuild -ta $package_version$package_ext|")
 		or die "Error executing rpmbuild: $!";
-	while(<$fh>) {
+	while(<$fh>) 
+	{
 		print $_;
 		if( /^Wrote:\s+(\S+.src.rpm)/ )
 		{
@@ -257,7 +294,7 @@ else
 }
 
 print "Done.\n";
-print "$package_file$package_ext\n";
+print "$package_version$package_ext\n";
 if( $rpm_file )
 {
 	print "rpm --addsign $rpm_file $srpm_file\n";
