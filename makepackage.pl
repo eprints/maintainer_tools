@@ -276,7 +276,7 @@ elsif( system('which rpmbuild') != 0 )
 }
 else
 {
-	open(my $fh, "rpmbuild -ta $package_version$package_ext|")
+	open(my $fh, "rpmbuild -ta packages/$package_version$package_ext|")
 		or die "Error executing rpmbuild: $!";
 	while(<$fh>) 
 	{
