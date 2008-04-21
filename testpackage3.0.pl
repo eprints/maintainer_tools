@@ -100,9 +100,9 @@ run( "$bin/generate_abstracts ep_auto_test --verbose" );
 run( "$bin/indexer start" );
 run( "$bin/indexer stop" );
 
-clean_up();
+#clean_up();
 
-
+exit 0;
 
 
 
