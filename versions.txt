@@ -107,3 +107,4 @@ eprints3-0		3.0			Beetroot
 3.1.0-alpha-1		3.1.0-alpha-1		Cake
 3.1.0-beta-1		3.1.0-beta-1		Kitty
 3.1.0-beta-2		3.1.0-beta-2		Woobie
+3.1.0-beta-3		3.1.0-beta-3		Moffat
