@@ -113,3 +113,5 @@ eprints3-0		3.0			Beetroot
 3.1.0-rc-3		3.1.0-rc-3		Probably a Dolphin
 3.1.0-rc-4		3.1.0-rc-4		Tartan
 3.1.0-rc-5		3.1.0-rc-5		Flag
+3.1.0-rc-6		3.1.0-rc-6		Red
+
