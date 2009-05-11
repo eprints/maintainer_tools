@@ -146,7 +146,7 @@ if( $type eq "nightly" )
 	$package_version = "eprints-build-$date";
 	$package_desc = "EPrints Nightly Build - $package_version";
 	$opt_revision = 1;
-	$rpm_version = 0;
+	$rpm_version = "0.0.0";
 }
 elsif( $opt_branch )
 {
@@ -164,8 +164,7 @@ elsif( $opt_branch )
 		print "\n";
 		exit 1;
 	}	
-	$rpm_version = 0;
-		
+	$rpm_version = "0.0.0";
 }
 else
 {
@@ -182,8 +181,9 @@ else
 	$version_path = "/tags/".$type;
 	$package_version = "eprints-".$ids{$type};
 	$package_desc = "EPrints ".$ids{$type}." (".$codenames{$type}.") [Born on $date]";
-	$rpm_version = $package_version;
-        $rpm_version =~ s/-.*//; # Exclude beta/alpha/RC versioning
+	$rpm_version = $ids{$type};
+	$rpm_version =~ s/-.*//; # Exclude beta/alpha/RC versioning
+	$rpm_version ||= "0.0.0"; # Hmm, b0rked
 }
 
 erase_dir( "export" );
