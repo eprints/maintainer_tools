@@ -6,19 +6,27 @@ use Getopt::Long;
 use Pod::Usage;
 use XML::LibXML;
 
-#GetOptions(
-#) or pod2usage(1);
+my $opt_version;
+my $opt_branch;
+
+GetOptions(
+	"version=s" => \$opt_version,
+	"branch=s" => \$opt_branch,
+) or pod2usage(1);
 
 our %HACKERS = (
 	cjg => 'Christopher Gutteridge <cjg@ecs.soton.ac.uk>',
 	tmb => 'Timothy Miles-Board <tmb@ecs.soton.ac.uk>',
 	tdb01r => 'Timothy David Brody <tdb01r@ecs.soton.ac.uk>',
-	dct05r => 'Dave Tarrant <dct05r@ecs.soton.ac.uk>',
+	dct05r => 'Dave Tarrant <davetaz@ecs.soton.ac.uk>',
+	'af05v@ecs.soton.ac.uk' => 'Adam Field <af05v@ecs.soton.ac.uk>',
+	moj199 => 'Mike Jewel',
 );
 
-our @VERSIONS = &read_versions;
+our @VERSIONS = &read_versions( $opt_version );
 
 our $TAGS = "https://svn.eprints.org/eprints/tags";
+our $BRANCHES = "https://svn.eprints.org/eprints/branches";
 our $TRUNK = "https://svn.eprints.org/eprints/trunk";
 
 &main;
@@ -29,14 +37,50 @@ sub main
 	foreach my $i (0..$#VERSIONS)
 	{
 		push @infos, info( "$TAGS/".$VERSIONS[$i]->{tag} );
-		print STDERR "$i of ".@VERSIONS."\r";
+		print STDERR "Pass 1 of 2: version $i of ".@VERSIONS."  \r";
+	}
+
+	if( $opt_branch )
+	{
+		my $branch_info = info( "$BRANCHES/$opt_branch" );
+		print "EPrints (r".$branch_info->{last_changed_rev}.")\n";
+		print "-" x 79, "\n\n";
+
+		foreach my $i (0..$#VERSIONS)
+		{
+			if( $infos[$i]->{last_changed_rev} > $branch_info->{last_changed_rev} )
+			{
+				splice(@VERSIONS,$i);
+				splice(@infos,$i);
+				last;
+			}
+		}
+
+		my $prev_info = $infos[$#infos];
+		my $range = $branch_info->{last_changed_rev} . ":" . $prev_info->{last_changed_rev};
+		my $revisions = revisions( "$BRANCHES/$opt_branch", $range );
+		print_by_author( $revisions );
+		print "\n";
+	}
+	elsif( !$opt_version || $opt_version eq "nightly" )
+	{
+		my $nightly_info = info( $TRUNK );
+		print "EPrints (r".$nightly_info->{last_changed_rev}.")\n";
+		print "-" x 79, "\n\n";
+		my $prev_info = $infos[$#infos];
+		my $range = $nightly_info->{last_changed_rev} . ":" . $prev_info->{last_changed_rev};
+		my $revisions = revisions( $TRUNK, $range );
+		print_by_author( $revisions );
+		print "\n";
 	}
 
 	foreach my $i (reverse 0..$#VERSIONS)
 	{
+		print STDERR "Pass 2 of 2: version ".(@VERSIONS-$i)." of ".@VERSIONS."  \r";
 		my $version = $VERSIONS[$i];
 		my $info = $infos[$i];
-		print "EPrints (".$version->{version}.")\n\n";
+		print "EPrints (".$version->{version}.")\n";
+		print "-" x 79, "\n\n";
 		if( $i != 0 )
 		{
 			my $prev_info = $infos[$i-1];
@@ -52,6 +96,8 @@ sub main
 
 sub read_versions
 {
+	my( $upto_version ) = @_;
+
 	my @versions;
 
 	my $filename = "versions.txt";
@@ -68,6 +114,7 @@ sub read_versions
 			version => $version,
 			name => $name,
 		};
+		last if defined $upto_version && $version eq $upto_version;
 	}
 	close($fh);
 
@@ -200,14 +247,18 @@ sub print_by_author
 		{
 			print "$author\n";
 		}
+		my %SEEN;
 		foreach my $revision (@{$authors{$author}})
 		{
 			my $msg = $revision->{msg};
-			$msg =~ s/^(\d{4}-\d\d-\d\d \w+)|\s+$//mg;
+			$msg =~ s/^(\d{4}[\-\/]\d\d[\-\/]\d\d( \w+)?)|\s+$//mg;
 			$msg =~ s/\n+/\n/g;
 			$msg =~ s/^\n+//;
 			$msg =~ s/\s+$//;
-			$msg =~ s/^([\*\-])/ $1/mg;
+			$msg =~ s/ *\n\s*([^\*\-\s])/ $1/g;
+			$msg =~ s/^\s*[\*\-]?\s*/ * /mg;
+			next if $SEEN{$msg};
+			$SEEN{$msg} = 1;
 			print "$msg\n";
 		}
 	}

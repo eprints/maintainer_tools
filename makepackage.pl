@@ -208,6 +208,15 @@ if( !defined $revision )
 cmd( "svn export http://svn.eprints.org/svn/eprints$version_path/release/ export/release/")==0 or die "Could not export system.\n";
 cmd( "svn export http://svn.eprints.org/svn/eprints$version_path/system/ export/system/")==0 or die "Could not export system.\n";
 
+if( $opt_branch )
+{
+	cmd( "perl build_version_log.pl --branch $type > export/system/CHANGELOG" )==0 or die "Could not build CHANGELOG.\n";
+}
+else
+{
+	cmd( "perl build_version_log.pl --version $type > export/system/CHANGELOG" )==0 or die "Could not build CHANGELOG.\n";
+}
+
 if( $opt_revision )
 {
 	$package_version .= "-r$revision";
