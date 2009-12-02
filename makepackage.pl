@@ -79,10 +79,12 @@ Use Zip as the packager (produces a .zip file).
 use Cwd;
 use Getopt::Long;
 use Pod::Usage;
+
 use strict;
-use warnings;
 
 my( $opt_revision, $opt_license, $opt_license_summary, $opt_list, $opt_zip, $opt_bzip, $opt_help, $opt_man, $opt_branch, $opt_force );
+
+my $opt_svn = "https://svn.eprints.org/eprints";
 
 my @raw_args = @ARGV;
 
@@ -97,6 +99,7 @@ GetOptions(
 	'zip' => \$opt_zip,
 	'bzip' => \$opt_bzip,
 	'force' => \$opt_force,
+	'svn' => \$opt_svn,
 ) || pod2usage( 2 );
 
 pod2usage( 1 ) if $opt_help;
@@ -154,13 +157,13 @@ elsif( $opt_branch )
 	$package_version = "eprints-branch-$type-$date";
 	$package_desc = "EPrints Branch Build - $package_version";
 	$opt_revision = 1;
-	my $result = `svn info http://svn.eprints.org/svn/eprints$version_path/system/`;
+	my $result = `svn info $opt_svn$version_path/system/`;
 	push @raw_args, "--force";
 	if( !length( $result ) )
 	{
 		print "Could not find branch '$type'\n\n";
 		print "Available branches:\n";
-		print `svn ls  http://svn.eprints.org/svn/eprints/branches/`;
+		print `svn ls $opt_svn/branches/`;
 		print "\n";
 		exit 1;
 	}	
@@ -193,7 +196,7 @@ my $originaldir = getcwd();
 
 mkdir( "export" );
 
-open( SVNINFO, "svn info http://svn.eprints.org/svn/eprints$version_path/system/|" ) || die "Could not run svn info";
+open( SVNINFO, "svn info $opt_svn$version_path/system/|" ) || die "Could not run svn info";
 my $revision;
 while( <SVNINFO> )
 {
@@ -205,12 +208,12 @@ if( !defined $revision )
 {
 	die 'Could not see revision number in svn info output';
 }
-cmd( "svn export http://svn.eprints.org/svn/eprints$version_path/release/ export/release/")==0 or die "Could not export system.\n";
-cmd( "svn export http://svn.eprints.org/svn/eprints$version_path/system/ export/system/")==0 or die "Could not export system.\n";
+cmd( "svn export $opt_svn$version_path/release/ export/release/")==0 or die "Could not export system.\n";
+cmd( "svn export $opt_svn$version_path/system/ export/system/")==0 or die "Could not export system.\n";
 
-if( $opt_branch )
+if( $type eq "nightly" || $opt_branch )
 {
-	cmd( "perl build_version_log.pl --branch $type > export/system/CHANGELOG" )==0 or die "Could not build CHANGELOG.\n";
+	cmd( "perl build_version_log.pl $opt_svn$version_path > export/system/CHANGELOG" )==0 or die "Could not build CHANGELOG.\n";
 }
 else
 {

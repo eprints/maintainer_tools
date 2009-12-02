@@ -5,14 +5,17 @@ use strict;
 use Getopt::Long;
 use Pod::Usage;
 use XML::LibXML;
+use Carp;
 
 my $opt_version;
-my $opt_branch;
+my $opt_progress;
 
 GetOptions(
 	"version=s" => \$opt_version,
-	"branch=s" => \$opt_branch,
+	"progress" => \$opt_progress,
 ) or pod2usage(1);
+
+my $opt_url = pop @ARGV;
 
 our %HACKERS = (
 	cjg => 'Christopher Gutteridge <cjg@ecs.soton.ac.uk>',
@@ -37,18 +40,17 @@ sub main
 	foreach my $i (0..$#VERSIONS)
 	{
 		push @infos, info( "$TAGS/".$VERSIONS[$i]->{tag} );
-		print STDERR "Pass 1 of 2: version $i of ".@VERSIONS."  \r";
+		print STDERR "Pass 1 of 2: version $i of ".@VERSIONS."  \r" if $opt_progress;
 	}
 
-	if( $opt_branch )
+	if( $opt_url )
 	{
-		my $branch_info = info( "$BRANCHES/$opt_branch" );
-		print "EPrints (r".$branch_info->{last_changed_rev}.")\n";
-		print "-" x 79, "\n\n";
+		my $info = info( $opt_url );
+		print_title( "r" . $info->{last_changed_rev} );
 
 		foreach my $i (0..$#VERSIONS)
 		{
-			if( $infos[$i]->{last_changed_rev} > $branch_info->{last_changed_rev} )
+			if( $infos[$i]->{last_changed_rev} > $info->{last_changed_rev} )
 			{
 				splice(@VERSIONS,$i);
 				splice(@infos,$i);
@@ -57,30 +59,18 @@ sub main
 		}
 
 		my $prev_info = $infos[$#infos];
-		my $range = $branch_info->{last_changed_rev} . ":" . $prev_info->{last_changed_rev};
-		my $revisions = revisions( "$BRANCHES/$opt_branch", $range );
-		print_by_author( $revisions );
-		print "\n";
-	}
-	elsif( !$opt_version || $opt_version eq "nightly" )
-	{
-		my $nightly_info = info( $TRUNK );
-		print "EPrints (r".$nightly_info->{last_changed_rev}.")\n";
-		print "-" x 79, "\n\n";
-		my $prev_info = $infos[$#infos];
-		my $range = $nightly_info->{last_changed_rev} . ":" . $prev_info->{last_changed_rev};
-		my $revisions = revisions( $TRUNK, $range );
+		my $range = $info->{last_changed_rev} . ":" . $prev_info->{last_changed_rev};
+		my $revisions = revisions( $opt_url, $range );
 		print_by_author( $revisions );
 		print "\n";
 	}
 
 	foreach my $i (reverse 0..$#VERSIONS)
 	{
-		print STDERR "Pass 2 of 2: version ".(@VERSIONS-$i)." of ".@VERSIONS."  \r";
+		print STDERR "Pass 2 of 2: version ".(@VERSIONS-$i)." of ".@VERSIONS."  \r" if $opt_progress;
 		my $version = $VERSIONS[$i];
 		my $info = $infos[$i];
-		print "EPrints (".$version->{version}.")\n";
-		print "-" x 79, "\n\n";
+		print_title( $version->{version} );
 		if( $i != 0 )
 		{
 			my $prev_info = $infos[$i-1];
@@ -141,6 +131,11 @@ sub info
 	}
 	close($fh);
 
+	if( !keys %$info )
+	{
+		Carp::croak "No info available for: $url";
+	}
+
 	return $info;
 }
 
@@ -198,6 +193,15 @@ sub revisions
 	}
 
 	return $revisions;
+}
+
+sub print_title
+{
+	my( $version ) = @_;
+
+	print "-" x 79, "\n";
+	print "EPrints ($version)\n";
+	print "-" x 79, "\n\n";
 }
 
 sub print_tag_line
