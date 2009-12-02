@@ -211,13 +211,18 @@ if( !defined $revision )
 cmd( "svn export $opt_svn$version_path/release/ export/release/")==0 or die "Could not export system.\n";
 cmd( "svn export $opt_svn$version_path/system/ export/system/")==0 or die "Could not export system.\n";
 
-if( $type eq "nightly" || $opt_branch )
+if( !-e "export/system/CHANGELOG" )
 {
-	cmd( "perl build_version_log.pl $opt_svn$version_path > export/system/CHANGELOG" )==0 or die "Could not build CHANGELOG.\n";
-}
-else
-{
-	cmd( "perl build_version_log.pl --version $type > export/system/CHANGELOG" )==0 or die "Could not build CHANGELOG.\n";
+	# Still keep CHANGELOG when building pre-3.2 packages
+	#
+	if( $type eq "nightly" || $opt_branch )
+	{
+		cmd( "perl build_version_log.pl $opt_svn$version_path > export/system/CHANGELOG" )==0 or die "Could not build CHANGELOG.\n";
+	}
+	else
+	{
+		cmd( "perl build_version_log.pl --version $type > export/system/CHANGELOG" )==0 or die "Could not build CHANGELOG.\n";
+	}
 }
 
 if( $opt_revision )
