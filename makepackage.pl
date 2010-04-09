@@ -64,6 +64,10 @@ List all available versions.
 
 Print the full manual page and then exit.
 
+=item B<--win32>
+
+Build a package that can be used to build a Win32 installer.
+
 =item B<--revision>
 
 Append a revision to the end of the output name.
@@ -82,7 +86,7 @@ use Pod::Usage;
 
 use strict;
 
-my( $opt_revision, $opt_license, $opt_license_summary, $opt_list, $opt_zip, $opt_bzip, $opt_help, $opt_man, $opt_branch, $opt_force );
+my( $opt_revision, $opt_license, $opt_license_summary, $opt_list, $opt_zip, $opt_bzip, $opt_help, $opt_man, $opt_branch, $opt_force, $opt_win32 );
 
 my $opt_svn = "https://svn.eprints.org/eprints";
 
@@ -100,6 +104,7 @@ GetOptions(
 	'bzip' => \$opt_bzip,
 	'force' => \$opt_force,
 	'svn' => \$opt_svn,
+	'win32' => \$opt_win32,
 ) || pod2usage( 2 );
 
 pod2usage( 1 ) if $opt_help;
@@ -230,6 +235,11 @@ if( $opt_revision )
 	$package_version .= "-r$revision";
 }
 
+if( $opt_win32 )
+{
+	$package_version .= "-win32";
+}
+
 my @args;
 push @args, 'export'; # The source
 push @args, 'package'; # The target
@@ -267,7 +277,14 @@ push @args, $rpm_version;
 #	}
 #}
 
-cmd( "export/release/internal_makepackage.pl", @args );
+if( $opt_win32 )
+{
+	cmd( "export/release/internal_makemsi.pl", @args );
+}
+else
+{
+	cmd( "export/release/internal_makepackage.pl", @args );
+}
 
 # stuff
 
