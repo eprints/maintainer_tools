@@ -117,7 +117,7 @@ sub info
 
 	my $info = {};
 
-	my $cmd = "svn info ".quotemeta($url);
+	my $cmd = "svn info '$url'";
 
 	open(my $fh, "$cmd|") or die "Error opening $cmd: $!";
 	while(<$fh>)
@@ -145,7 +145,7 @@ sub revisions
 
 	my $revisions = [];
 
-	my $cmd = "svn log -v --xml -r $range ".quotemeta($url);
+	my $cmd = "svn log -v --xml -r $range '$url'";
 
 	open(my $fh, "$cmd|") or die "Error opening $cmd; $!";
 	my $xml = join "", <$fh>;
