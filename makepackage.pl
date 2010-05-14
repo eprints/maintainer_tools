@@ -83,6 +83,8 @@ Use Zip as the packager (produces a .zip file).
 use Cwd;
 use Getopt::Long;
 use Pod::Usage;
+use File::Path;
+use File::Copy qw( cp move );
 
 use strict;
 
@@ -138,15 +140,17 @@ my $rpm_version;
 my $package_ext = '.tar.gz';
 $package_ext = '.zip' if $opt_zip;
 $package_ext = '.tar.bz2' if $opt_bzip;
+$package_ext = '.zip' if $opt_win32;
 
 pod2usage( 2 ) if( scalar @ARGV != 1 );
 
 my( $type ) = @ARGV;
 
-my $date = `date +%Y-%m-%d`;
-chomp $date;
-
-
+my @date = gmtime();
+my $date = sprintf( "%04d-%02d-%02d",
+	$date[5] + 1900,
+	$date[4] + 1,
+	$date[3] );
 
 if( $type eq "nightly" ) 
 { 
@@ -279,11 +283,11 @@ push @args, $rpm_version;
 
 if( $opt_win32 )
 {
-	cmd( "export/release/internal_makemsi.pl", @args );
+	cmd( "perl", "export/release/internal_makemsi.pl", @args );
 }
 else
 {
-	cmd( "export/release/internal_makepackage.pl", @args );
+	cmd( "perl", "export/release/internal_makepackage.pl", @args );
 }
 
 # stuff
@@ -295,46 +299,26 @@ my $filename = $package_version.$package_ext;
 if( -e $filename )
 {
 	print "Moving package file into packages/ directory.\n";
-	`mv $filename packages/`;
+	rename($filename, "packages/$filename");
 }
 
-my( $rpm_file, $srpm_file);
+my $cwd = getcwd();
+if( $opt_win32 && $^O eq "MSWin32" && -e "srvany.exe" )
+{
+	chdir("packages");
+	cmd("unzip","-oq","$package_version$package_ext");
+	cp("../srvany.exe", "$package_version") or die "Missing srvany.exe?";
+	chdir($package_version);
+	cmd("candle","eprints.wsx");
+	cmd("light","-ext","WixUIExtension","eprints.wixobj");
+	move("eprints.msi","../$package_version.msi");
+	chdir("$cwd/packages");
+	erase_dir($package_version);
+	print "$package_version.msi\n";
+}
+chdir($cwd);
 
-if( $< != 0 )
-{
-	print "Not running as root, won't build RPM!\n";
-}
-elsif( system('which rpmbuild') != 0 )
-{
-	print "Couldn't find rpmbuild in path, won't build RPM!\n";
-}
-else
-{
-	open(my $fh, "rpmbuild -ta packages/$package_version$package_ext|")
-		or die "Error executing rpmbuild: $!";
-	while(<$fh>) 
-	{
-		print $_;
-		if( /^Wrote:\s+(\S+.src.rpm)/ )
-		{
-			$srpm_file = $1;
-		}
-		elsif( /^Wrote:\s+(\S+.rpm)/ )
-		{
-			$rpm_file = $1;
-		}
-	}
-	close $fh;
-}
-
-print "Done.\n";
 print "$package_version$package_ext\n";
-if( $rpm_file )
-{
-	print "rpm --addsign $rpm_file $srpm_file\n";
-	print "$rpm_file\n";
-	print "$srpm_file\n";
-}
 
 exit;
 
@@ -345,7 +329,7 @@ sub erase_dir
 
 	if (-d $dirname )
 	{
-		cmd( "/bin/rm -rf ".$dirname ) == 0 or 
+		rmtree($dirname) or
 			die "Couldn't remove ".$dirname." dir.\n";
 	}
 }
