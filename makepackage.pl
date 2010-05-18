@@ -88,6 +88,10 @@ Create a changelog (default).
 
 Use Zip as the packager (produces a .zip file).
 
+=item B<--upload=username:password>
+
+Post the packaged file to files.eprints.org with the given username/password.
+
 =back
 
 =cut
@@ -97,10 +101,11 @@ use Getopt::Long;
 use Pod::Usage;
 use File::Path;
 use File::Copy qw( cp move );
+use LWP::UserAgent;
 
 use strict;
 
-my( $opt_revision, $opt_license, $opt_license_summary, $opt_list, $opt_zip, $opt_bzip, $opt_help, $opt_man, $opt_branch, $opt_force, $opt_win32, $opt_rpm, $opt_deb, $opt_changelog );
+my( $opt_revision, $opt_license, $opt_license_summary, $opt_list, $opt_zip, $opt_bzip, $opt_help, $opt_man, $opt_branch, $opt_force, $opt_win32, $opt_rpm, $opt_deb, $opt_changelog, $opt_upload );
 
 my $opt_svn = "https://svn.eprints.org/eprints";
 $opt_changelog = 1;
@@ -123,10 +128,20 @@ GetOptions(
 	'deb' => \$opt_deb,
 	'rpm' => \$opt_rpm,
 	'changelog!' => \$opt_changelog,
+	'upload=s' => \$opt_upload,
 ) || pod2usage( 2 );
 
 pod2usage( 1 ) if $opt_help;
 pod2usage( -exitstatus => 0, -verbose => 2 ) if $opt_man;
+
+my %mime_types = (
+	deb => "application/x-deb",
+	rpm => "application/x-rpm",
+	msi => "application/x-msi",
+);
+
+my $upload_url = "http://files.eprints.org/cgi/post_release";
+my $ua = LWP::UserAgent->new();
 
 my %codenames= ();
 my %ids = ();
@@ -164,6 +179,7 @@ my $version_path;
 my $package_version;
 my $package_desc;
 my $rpm_version;
+my $mime_type;
 my $package_ext = '.tar.gz';
 $package_ext = '.zip' if $opt_zip;
 $package_ext = '.tar.bz2' if $opt_bzip;
@@ -225,6 +241,41 @@ else
 	$rpm_version ||= "0.0.0"; # Hmm, b0rked
 }
 
+if( $opt_upload )
+{
+	$ua->credentials( "files.eprints.org:80", "EPrints.org", split(/:/, $opt_upload, 2) );
+
+	my $source = "$package_version.tar.gz";
+	if( $opt_deb )
+	{
+		$mime_type = $mime_types{deb};
+	}
+	elsif( $opt_rpm )
+	{
+		$mime_type = $mime_types{rpm};
+	}
+	elsif( $opt_win32 )
+	{
+		$mime_type = $mime_types{msi};
+	}
+	else
+	{
+		die "--upload argument requires a package argument to upload\n";
+	}
+
+	my %existing = retrieve_versions( $source );
+	if( !scalar keys %existing )
+	{
+		print "files.eprints.org reports no $source\n";
+		exit;
+	}
+	elsif( exists $existing{$mime_type} )
+	{
+		print "$existing{$mime_type}\n";
+		exit;
+	}
+}
+
 erase_dir( "export" );
 
 print "Exporting from SVN...\n";
@@ -270,11 +321,6 @@ elsif( !-e "export/system/CHANGELOG" )
 if( $opt_revision )
 {
 	$package_version .= "-r$revision";
-}
-
-if( $opt_win32 )
-{
-	$package_version .= "-win32";
 }
 
 my @args;
@@ -335,23 +381,57 @@ if( -e $filename )
 	rename($filename, "packages/$filename");
 }
 
+my $install_package;
+
 my $cwd = getcwd();
 chdir("packages");
 if( $opt_deb )
 {
-	build_deb();
+	$install_package = build_deb();
 }
 elsif( $opt_rpm )
 {
-	build_rpm();
+	$install_package = build_rpm();
 }
 elsif( $opt_win32 && $^O eq "MSWin32" && -e "srvany.exe" )
 {
-	build_msi();
+	$install_package = build_msi();
 }
 chdir($cwd);
 
 print "$package_version$package_ext\n";
+
+if( $opt_upload && $install_package )
+{
+	my( $username, $password ) = split /:/, $opt_upload;
+
+	my $source = "$package_version.tar.gz";
+
+	if( open(my $fh, "<", "packages/$install_package") )
+	{
+		my $content;
+		sysread($fh, $content, -s $fh);
+		my $r = $ua->post( $upload_url, {
+			source => $source,
+			filename => $install_package,
+			content => $content,
+			content_type => $mime_type,
+		});
+		close($fh);
+		if( $r->is_success )
+		{
+			print $r->content . "\n";
+		}
+		else
+		{
+			die $r->status_line . "\n";
+		}
+	}
+	else
+	{
+		die "Can not open packages/$install_package: $!";
+	}
+}
 
 exit;
 
@@ -407,8 +487,12 @@ EOS
 	unlink("eprints.spec");
 	erase_dir($builddir);
 	erase_dir($tmppath);
-	print "eprints3-$rpm_version-1.noarch.rpm\n";
+	my $rpm = "eprints3-$rpm_version-1.noarch.rpm";
+	move("noarch/$rpm", $rpm);
+	print "$rpm\n";
 	print "eprints3-$rpm_version-1.src.rpm\n";
+
+	return $rpm;
 }
 
 sub build_msi
@@ -422,5 +506,28 @@ sub build_msi
 	chdir("$cwd/packages");
 	erase_dir($package_version);
 	print "$package_version.msi\n";
+
+	return "$package_version.msi";
 }
 
+sub retrieve_versions
+{
+	my( $source ) = @_;
+
+	my $r = $ua->post( $upload_url, {
+		source => $source,
+	});
+	if( !$r->is_success )
+	{
+		die $r->request->uri . ": " . $r->status_line . "\n";
+	}
+
+	my %existing;
+	for( split /\n/, $r->content )
+	{
+		my( $v, $mt, $url ) = split /\t/, $_;
+		$existing{$mt} = $url;
+	}
+
+	return %existing;
+}
