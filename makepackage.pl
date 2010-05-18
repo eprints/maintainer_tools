@@ -241,6 +241,18 @@ else
 	$rpm_version ||= "0.0.0"; # Hmm, b0rked
 }
 
+if( $opt_win32 )
+{
+	if( $^O ne "MSWin32" )
+	{
+		die "Can't build Win32 MSI on platform: $^O";
+	}
+	if( !-e "srvany.exe" )
+	{
+		die "Can't build Win32 MSI without srvany.exe";
+	}
+}
+
 if( $opt_upload )
 {
 	$ua->credentials( "files.eprints.org:80", "EPrints.org", split(/:/, $opt_upload, 2) );
@@ -332,36 +344,10 @@ push @args, $package_version;
 push @args, $package_ext;
 push @args, $rpm_version;
 
-# I don't follow this code so it's commented out for now.
-#
-# Optional revision number (which is a pain because we *add* a value)
-#if( $opt_revision )
-#{
-#	for(my $i = 0; $i < @raw_args; $i++)
-#	{
-#		if( $raw_args[$i] eq '--revision' )
-#		{
-#			splice(@raw_args, $i+1, 0, $revision);
-#		}
-#		elsif( $raw_args[$i] eq '-r' )
-#		{
-#			splice(@raw_args, $i, 1, '--revision', $revision);
-#		}
-#		elsif( $raw_args[$i] =~ s/^-([a-z]*)r([a-z]*)$/-$1$2/i )
-#		{
-#			splice(@raw_args,$i,1) unless length($1) or length($2);
-#			unshift @raw_args, '--revision', $revision;
-#		}
-#		else
-#		{
-#			next;
-#		}
-#		last;
-#	}
-#}
-
 if( $opt_win32 )
 {
+	$args[2] =~ s/^[^0-9\.]+//;
+	$args[2] =~ s/[^0-9\.].*$//;
 	cmd( "perl", "export/release/internal_makemsi.pl", @args );
 }
 else
@@ -387,22 +373,29 @@ my $cwd = getcwd();
 chdir("packages");
 if( $opt_deb )
 {
+	print "Building DEB package\n";
 	$install_package = build_deb();
 }
 elsif( $opt_rpm )
 {
+	print "Building RPM package\n";
 	$install_package = build_rpm();
 }
-elsif( $opt_win32 && $^O eq "MSWin32" && -e "srvany.exe" )
+elsif( $opt_win32 )
 {
+	print "Building MSI package\n";
 	$install_package = build_msi();
 }
 chdir($cwd);
 
 print "$package_version$package_ext\n";
 
-if( $opt_upload && $install_package )
+if( $opt_upload )
 {
+	if( !$install_package )
+	{
+		die "Can't upload without a package file";
+	}
 	my( $username, $password ) = split /:/, $opt_upload;
 
 	my $source = "$package_version.tar.gz";
