@@ -346,8 +346,6 @@ push @args, $rpm_version;
 
 if( $opt_win32 )
 {
-	$args[2] =~ s/^[^0-9\.]+//;
-	$args[2] =~ s/[^0-9\.].*$//;
 	cmd( "perl", "export/release/internal_makemsi.pl", @args );
 }
 else
