@@ -80,6 +80,10 @@ Build a .rpm package that can be installed on Redhat-based systems.
 
 Append a revision to the end of the output name.
 
+=item B<--release> PATH
+
+Path to an internal release bundle (developers only).
+
 =item B<--changelog>
 
 Create a changelog (default).
@@ -102,10 +106,13 @@ use Pod::Usage;
 use File::Path;
 use File::Copy qw( cp move );
 use LWP::UserAgent;
+use Recursive; # File::Copy::Recursive
 
 use strict;
 
-my( $opt_revision, $opt_license, $opt_license_summary, $opt_list, $opt_zip, $opt_bzip, $opt_help, $opt_man, $opt_branch, $opt_force, $opt_win32, $opt_rpm, $opt_deb, $opt_changelog, $opt_upload );
+my( $opt_revision, $opt_license, $opt_license_summary, $opt_list, $opt_zip, $opt_bzip, $opt_help, $opt_man, $opt_branch, $opt_force, $opt_win32, $opt_rpm, $opt_deb, $opt_changelog, $opt_upload, $opt_release );
+
+$opt_release = "export/release";
 
 my $opt_svn = "https://svn.eprints.org/eprints";
 $opt_changelog = 1;
@@ -129,6 +136,7 @@ GetOptions(
 	'rpm' => \$opt_rpm,
 	'changelog!' => \$opt_changelog,
 	'upload=s' => \$opt_upload,
+	'release=s' => \$opt_release,
 ) || pod2usage( 2 );
 
 pod2usage( 1 ) if $opt_help;
@@ -247,10 +255,6 @@ if( $opt_win32 )
 	{
 		die "Can't build Win32 MSI on platform: $^O";
 	}
-	if( !-e "srvany.exe" )
-	{
-		die "Can't build Win32 MSI without srvany.exe";
-	}
 }
 
 if( $opt_upload )
@@ -307,7 +311,15 @@ if( !defined $revision )
 {
 	die 'Could not see revision number in svn info output';
 }
-cmd( "svn -q export $opt_svn$version_path/release/ export/release/")==0 or die "Could not export system.\n";
+if( $opt_release )
+{
+	print "$opt_release => export/release/ due to --release option\n";
+	File::Copy::Recursive::dircopy( $opt_release, "export/release/" ) or die "No files found in $opt_release";
+}
+else
+{
+	cmd( "svn -q export $opt_svn$version_path/release/ export/release/")==0 or die "Could not export system.\n";
+}
 cmd( "svn -q export $opt_svn$version_path/system/ export/system/")==0 or die "Could not export system.\n";
 
 if( !$opt_changelog )
@@ -489,7 +501,6 @@ EOS
 sub build_msi
 {
 	cmd("unzip","-oq","$package_version$package_ext");
-	cp("../srvany.exe", "$package_version") or die "Missing srvany.exe?";
 	chdir($package_version);
 	cmd("candle","eprints.wsx");
 	cmd("light","-ext","WixUIExtension","eprints.wixobj");
