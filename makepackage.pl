@@ -253,7 +253,7 @@ if( $opt_win32 )
 	{
 		die "Can't build Win32 MSI on platform: $^O";
 	}
-	if( $opt_branch && $type =~ /^3\.2\./ && !-e "srvany.exe" )
+	if( $type =~ /^3\.2\b/ && !-e "srvany.exe" )
 	{
 		die "Can't bulid Win32 3.2.X MSI without srvany.exe";
 	}
@@ -528,7 +528,7 @@ sub build_rpm
 sub build_msi
 {
 	cmd("unzip","-oq","$package_version$package_ext");
-	if( $opt_branch && $type =~ /^3\.2\./ )
+	if( $type =~ /^3\.2\b/ )
 	{
 		cp("../srvany.exe", "$package_version") or die "Missing srvany.exe";
 	}
