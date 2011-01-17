@@ -462,36 +462,61 @@ sub build_deb
 
 sub build_rpm
 {
+	$revision = 1 if !defined $revision; # RPM always has a revision
+
 	my $builddir = "BUILD";
 	my $tmppath = "TEMP";
 	mkdir($builddir);
 	mkdir($tmppath);
 	cmd("tar","--strip-components=1","-xzf","$package_version$package_ext","$package_version/eprints3.spec");
-	open(SPEC,">","eprints.spec") or die "Error writing to eprints.spec: $!";
-	print SPEC <<EOS;
-\%define _topdir $cwd/packages
-\%define _sourcedir \%{_topdir}
-\%define _rpmdir \%{_topdir}
-\%define _srcrpmdir \%{_topdir}
-\%define _builddir \%{_topdir}/$builddir
-\%define _tmppath \%{_topdir}/$tmppath
-EOS
-	open(SPEC3,"<","eprints3.spec") or die "Error reading from eprints3.spec: $!";
-	while(<SPEC3>)
+	open(SPEC,"<","eprints3.spec") or die "Error reading eprints3.spec: $!";
+	my $spec = "";
+	my %defines;
+	while(<SPEC>)
 	{
-		print SPEC $_;
+		$spec .= $_, last if $_ !~ /^\%define/;
+		chomp($_);
+		my( undef, $name, $value ) = split /\s+/, $_, 3;
+		$defines{$name} = $value;
 	}
-	close(SPEC3);
+	while(<SPEC>)
+	{
+		if( $_ =~ /^Release:/ )
+		{
+			$spec .= "Release: \%{_eprelease}\%{?dist}\n";
+		}
+		else
+		{
+			$spec .= $_;
+		}
+	}
 	close(SPEC);
+	$defines{_topdir} = "$cwd/packages";
+	$defines{_sourcedir} = "\%{_topdir}";
+	$defines{_rpmdir} = "\%{_topdir}";
+	$defines{_srcrpmdir} = "\%{_topdir}";
+	$defines{_builddir} = "\%{_topdir}/$builddir";
+	$defines{_tmppath} = "\%{_topdir}/$tmppath";
+	$defines{_eprelease} = $revision;
+	open(SPEC,">","eprints3.spec") or die "Error writing to eprints.spec: $!";
+	foreach my $name (keys %defines)
+	{
+		print SPEC "\%define $name $defines{$name}\n";
+	}
+	print SPEC $spec;
+	close(SPEC);
+	cmd("rpmbuild","--quiet","-ba","--clean","eprints3.spec")==0 or die "Error in rpmbuild\n";
 	unlink("eprints3.spec");
-	cmd("rpmbuild","--quiet","-ba","--clean","eprints.spec")==0 or die "Error in rpmbuild\n";
-	unlink("eprints.spec");
 	erase_dir($builddir);
 	erase_dir($tmppath);
-	my $rpm = "eprints3-$rpm_version-1.noarch.rpm";
+
+	my $rpm = "eprints3-$rpm_version-$revision.noarch.rpm";
+
 	move("noarch/$rpm", $rpm);
+	rmdir("noarch");
+
 	print "$rpm\n";
-	print "eprints3-$rpm_version-1.src.rpm\n";
+	print "eprints3-$rpm_version-$revision.src.rpm\n";
 
 	return $rpm;
 }
