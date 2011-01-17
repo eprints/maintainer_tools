@@ -112,8 +112,6 @@ use strict;
 
 my( $opt_revision, $opt_license, $opt_license_summary, $opt_list, $opt_zip, $opt_bzip, $opt_help, $opt_man, $opt_branch, $opt_force, $opt_win32, $opt_rpm, $opt_deb, $opt_changelog, $opt_upload, $opt_release );
 
-$opt_release = "export/release";
-
 my $opt_svn = "https://svn.eprints.org/eprints";
 $opt_changelog = 1;
 
