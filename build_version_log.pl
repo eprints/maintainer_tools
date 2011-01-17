@@ -24,6 +24,7 @@ our %HACKERS = (
 	dct05r => 'Dave Tarrant <davetaz@ecs.soton.ac.uk>',
 	'af05v@ecs.soton.ac.uk' => 'Adam Field <af05v@ecs.soton.ac.uk>',
 	moj199 => 'Mike Jewel',
+	'sf03r@ecs.soton.ac.uk' => 'Sebastien Francois <sf03r@ecs.soton.ac.uk>',
 );
 
 our @VERSIONS = &read_versions( $opt_version );
