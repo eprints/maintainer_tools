@@ -253,6 +253,10 @@ if( $opt_win32 )
 	{
 		die "Can't build Win32 MSI on platform: $^O";
 	}
+	if( $opt_branch && $type =~ /^3\.2\./ && !-e "srvany.exe" )
+	{
+		die "Can't bulid Win32 3.2.X MSI without srvany.exe";
+	}
 }
 
 if( $opt_upload )
@@ -524,6 +528,10 @@ sub build_rpm
 sub build_msi
 {
 	cmd("unzip","-oq","$package_version$package_ext");
+	if( $opt_branch && $type =~ /^3\.2\./ )
+	{
+		cp("../srvany.exe", "$package_version") or die "Missing srvany.exe";
+	}
 	chdir($package_version);
 	cmd("candle","eprints.wsx");
 	cmd("light","-ext","WixUIExtension","eprints.wixobj");
