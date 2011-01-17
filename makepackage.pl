@@ -324,6 +324,28 @@ else
 }
 cmd( "svn -q export $opt_svn$version_path/system/ export/system/")==0 or die "Could not export system.\n";
 
+# check that the $EPrints::VERSION is correct for the requested version
+if( $type ne "nightly" && !$opt_branch )
+{
+	my $version;
+	if( open(EPRINTS, "<", "export/system/perl_lib/EPrints.pm") )
+	{
+		while(<EPRINTS>)
+		{
+			if( /VERSION = v(.+)/ )
+			{
+				$version = $1;
+				last;
+			}
+		}
+		close(EPRINTS);
+		if( $version && $version ne $type )
+		{
+			die "EPrints::VERSION is $version but you asked for $type (perhaps the tag doesn't have the correct version)?\n";
+		}
+	}
+}
+
 if( !$opt_changelog )
 {
 	open(CHANGELOG, ">", "export/system/CHANGELOG");
