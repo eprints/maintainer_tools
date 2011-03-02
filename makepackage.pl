@@ -332,7 +332,7 @@ if( $type ne "nightly" && !$opt_branch )
 	{
 		while(<EPRINTS>)
 		{
-			if( /VERSION = v(.+)/ )
+			if( /VERSION = v([0-9\.]+)/ )
 			{
 				$version = $1;
 				last;
@@ -341,7 +341,7 @@ if( $type ne "nightly" && !$opt_branch )
 		close(EPRINTS);
 		if( $version && $version ne $type )
 		{
-			die "EPrints::VERSION is $version but you asked for $type (perhaps the tag doesn't have the correct version)?\n";
+			die "EPrints::VERSION is '$version' but you asked for '$type' (perhaps the tag doesn't have the correct version)?\n";
 		}
 	}
 }
