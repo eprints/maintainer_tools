@@ -136,3 +136,4 @@ eprints3-0		3.0			Beetroot
 3.2.4			3.2.4			Victoria Sponge
 3.2.5			3.2.5			Stollen
 3.2.6			3.2.6			Apple Tart
+3.2.7			3.2.7			Apple Flan
