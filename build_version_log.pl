@@ -51,6 +51,7 @@ sub main
 
 		foreach my $i (0..$#VERSIONS)
 		{
+			next if !keys %{$infos[$i]};
 			if( $infos[$i]->{last_changed_rev} > $info->{last_changed_rev} )
 			{
 				splice(@VERSIONS,$i);
@@ -60,6 +61,7 @@ sub main
 		}
 
 		my $prev_info = $infos[$#infos];
+		return if !keys %$prev_info;
 		my $range = $info->{last_changed_rev} . ":" . $prev_info->{last_changed_rev};
 		my $revisions = revisions( $opt_url, $range );
 		print_by_author( $revisions );
@@ -152,7 +154,8 @@ sub revisions
 	my $xml = join "", <$fh>;
 	close($fh);
 
-	my $doc = XML::LibXML->new->parse_string( $xml );
+	my $doc = eval { XML::LibXML->new->parse_string( $xml ) };
+	return $revisions if !defined $doc;
 	$xml = $doc->documentElement;
 
 	foreach my $logentry ($xml->getElementsByTagName( "logentry" ))
