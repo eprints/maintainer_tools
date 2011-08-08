@@ -134,7 +134,7 @@ sub info
 
 	if( !keys %$info )
 	{
-		Carp::croak "No info available for: $url";
+		Carp::carp "No info available for: $url";
 	}
 
 	return $info;
@@ -208,6 +208,8 @@ sub print_title
 sub print_tag_line
 {
 	my( $info ) = @_;
+
+	return if !keys %$info; # no info on tag???
 
 	print "-- tagged-by";
 
