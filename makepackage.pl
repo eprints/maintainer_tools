@@ -96,6 +96,18 @@ Use Zip as the packager (produces a .zip file).
 
 Post the packaged file to files.eprints.org with the given username/password.
 
+=item --prefix
+
+Set the path to install to. (RPM only)
+
+=item --user
+
+Set the user to install as. (RPM only)
+
+=item --group
+
+Set the group to install as. (RPM only)
+
 =back
 
 =cut
@@ -114,6 +126,10 @@ my( $opt_revision, $opt_license, $opt_license_summary, $opt_list, $opt_zip, $opt
 
 my $opt_svn = "https://svn.eprints.org/eprints";
 $opt_changelog = 1;
+my $opt_cleanup = 1;
+my $opt_prefix = "/usr/share/eprints";
+my $opt_user = "eprints";
+my $opt_group = "eprints";
 
 my @raw_args = @ARGV;
 
@@ -135,6 +151,10 @@ GetOptions(
 	'changelog!' => \$opt_changelog,
 	'upload=s' => \$opt_upload,
 	'release=s' => \$opt_release,
+	'cleanup!' => \$opt_cleanup,
+	'prefix=s' => \$opt_prefix,
+	'user=s' => \$opt_user,
+	'group=s' => \$opt_group,
 ) || pod2usage( 2 );
 
 pod2usage( 1 ) if $opt_help;
@@ -379,6 +399,7 @@ push @args, $package_desc;
 push @args, $package_version;
 push @args, $package_ext;
 push @args, $rpm_version;
+push @args, "--nocleanup" if !$opt_cleanup;
 
 if( $opt_win32 )
 {
@@ -490,21 +511,32 @@ sub build_rpm
 {
 	$revision = 1 if !defined $revision; # RPM always has a revision
 
+	my $specfile;
+
 	my $builddir = "BUILD";
 	my $tmppath = "TEMP";
 	mkdir($builddir);
 	mkdir($tmppath);
-	cmd("tar","--strip-components=1","-xzf","$package_version$package_ext","$package_version/eprints3.spec");
-	open(SPEC,"<","eprints3.spec") or die "Error reading eprints3.spec: $!";
+	for(qw( eprints.spec eprints3.spec ))
+	{
+		$specfile = $_;
+		cmd("tar",
+				"--strip-components=1",
+				"-xzf",
+				"$package_version$package_ext",
+				"$package_version/$specfile"
+			);
+		last if -f $specfile;
+	}
+	open(SPEC,"<",$specfile) or die "Error reading $specfile: $!";
 	my $spec = "";
-	my %defines;
+
+	# strip old-style %defines
 	while(<SPEC>)
 	{
 		$spec .= $_, last if $_ !~ /^\%define/;
-		chomp($_);
-		my( undef, $name, $value ) = split /\s+/, $_, 3;
-		$defines{$name} = $value;
 	}
+	# make Release distribution-specific (if set)
 	while(<SPEC>)
 	{
 		if( $_ =~ /^Release:/ )
@@ -517,32 +549,58 @@ sub build_rpm
 		}
 	}
 	close(SPEC);
-	$defines{_topdir} = "$cwd/packages";
-	$defines{_sourcedir} = "\%{_topdir}";
-	$defines{_rpmdir} = "\%{_topdir}";
-	$defines{_srcrpmdir} = "\%{_topdir}";
-	$defines{_builddir} = "\%{_topdir}/$builddir";
-	$defines{_tmppath} = "\%{_topdir}/$tmppath";
-	$defines{_eprelease} = $revision;
-	open(SPEC,">","eprints3.spec") or die "Error writing to eprints.spec: $!";
-	foreach my $name (keys %defines)
+
+	my %defines = (
+		# package options
+		_epname => "eprints",
+		_epuser => $opt_user,
+		_epgroup => $opt_group,
+		_epversion => $rpm_version,
+		_eprelease => $revision,
+		_eppackage => $package_version,
+		_epbase_path => $opt_prefix,
+	);
+	open(SPEC,">",$specfile) or die "Error writing to $specfile: $!";
+	# new-style define-conditionals
+	print SPEC "# Default values for packaging this version\n";
+	for(sort keys %defines)
 	{
-		print SPEC "\%define $name $defines{$name}\n";
+		print SPEC '%{!?'.$_.': %define '.$_." $defines{$_}}\n";
 	}
+	print SPEC "\n";
 	print SPEC $spec;
 	close(SPEC);
-	cmd("rpmbuild","--quiet","-ba","--clean","eprints3.spec")==0 or die "Error in rpmbuild\n";
-	unlink("eprints3.spec");
+	%defines = (
+		%defines,
+
+		# rpm build options
+		_topdir => "$cwd/packages",
+		_sourcedir => "\%{_topdir}",
+		_rpmdir => "\%{_topdir}",
+		_srcrpmdir => "\%{_topdir}",
+		_builddir => "\%{_topdir}/$builddir",
+		_tmppath => "\%{_topdir}/$tmppath",
+	);
+	my @defines = map { ('--define' => "$_ $defines{$_}") } keys(%defines);
+
+	cmd("rpmbuild",
+			"--quiet",
+			"-ba",
+			"--clean",
+			@defines,
+			$specfile
+		)==0 or die "Error in rpmbuild\n";
+	unlink($specfile);
 	erase_dir($builddir);
 	erase_dir($tmppath);
 
-	my $rpm = "eprints3-$rpm_version-$revision.noarch.rpm";
+	my $rpm = "eprints-$rpm_version-$revision.noarch.rpm";
 
 	move("noarch/$rpm", $rpm);
 	rmdir("noarch");
 
 	print "$rpm\n";
-	print "eprints3-$rpm_version-$revision.src.rpm\n";
+	print "eprints-$rpm_version-$revision.src.rpm\n";
 
 	return $rpm;
 }
