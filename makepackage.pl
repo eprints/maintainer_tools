@@ -559,6 +559,9 @@ sub build_rpm
 		_eprelease => $revision,
 		_eppackage => $package_version,
 		_epbase_path => $opt_prefix,
+		# compatibility with 3.2
+		user => $opt_user,
+		user_group => $opt_group,
 	);
 	open(SPEC,">",$specfile) or die "Error writing to $specfile: $!";
 	# new-style define-conditionals
