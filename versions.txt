@@ -146,3 +146,4 @@ eprints3-0		3.0			Beetroot
 3.3.4			3.3.4			Blackberry
 3.3.5			3.3.5			Cranberry
 3.3.6			3.3.6			Gooseberry
+3.3.7			3.3.7			Bilberry
